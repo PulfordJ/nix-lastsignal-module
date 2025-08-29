@@ -1,0 +1,130 @@
+# LastSignal NixOS Module
+
+A NixOS module for the LastSignal automated safety check-in system.
+
+## Usage
+
+Add this module to your NixOS configuration:
+
+```nix
+# In your configuration.nix or flake
+imports = [ ./path/to/nix-lastsignal-module ];
+
+services.lastsignal = {
+  enable = true;
+  configFile = ./lastsignal-config.toml; # or any other path
+};
+```
+
+## Configuration File
+
+You must provide a configuration file. This can be:
+
+### Plain Configuration File
+
+```nix
+services.lastsignal = {
+  enable = true;
+  configFile = pkgs.writeText "lastsignal-config.toml" ''
+    [checkin]
+    duration_between_checkins = "7d"
+    output_retry_delay = "24h"
+    
+    [[checkin.outputs]]
+    type = "email"
+    config = { to = "you@example.com", smtp_host = "smtp.gmail.com", smtp_port = "587", username = "you@gmail.com", password = "app-password" }
+    
+    [recipient]
+    max_time_since_last_checkin = "14d"
+    
+    [[recipient.last_signal_outputs]]
+    type = "email"  
+    config = { to = "emergency@example.com", smtp_host = "smtp.gmail.com", smtp_port = "587", username = "you@gmail.com", password = "app-password" }
+    
+    [last_signal]
+    adapter_type = "file"
+    message_file = "~/.lastsignal/message.txt"
+    
+    [app]
+    data_directory = "~/.lastsignal"
+    log_level = "info"
+  '';
+};
+```
+
+### Encrypted Configuration with agenix
+
+```nix
+services.lastsignal = {
+  enable = true;
+  configFile = config.age.secrets.lastsignal-config.path;
+};
+
+# In your secrets configuration
+age.secrets.lastsignal-config = {
+  file = ./secrets/lastsignal-config.toml.age;
+  owner = "lastsignal";
+  group = "lastsignal";
+  mode = "0400";
+};
+```
+
+### Encrypted Configuration with sops-nix
+
+```nix
+services.lastsignal = {
+  enable = true;
+  configFile = config.sops.secrets.lastsignal-config.path;
+};
+
+# In your secrets configuration
+sops.secrets.lastsignal-config = {
+  sopsFile = ./secrets.yaml;
+  owner = "lastsignal";
+  group = "lastsignal";
+  mode = "0400";
+};
+```
+
+## Configuration Options
+
+- `enable`: Whether to enable the LastSignal service
+- `user`: User account for the service (default: "lastsignal")
+- `group`: Group account for the service (default: "lastsignal") 
+- `dataDirectory`: Directory for state files (default: "/var/lib/lastsignal")
+- `configFile`: Path to the LastSignal configuration file (required)
+
+## Security
+
+The module includes security hardening:
+- Runs as dedicated non-root user
+- Restricted filesystem access
+- Protected kernel interfaces
+- Configuration files with restricted permissions
+
+## Manual Commands
+
+After enabling the service, you can use these commands:
+
+```bash
+# Manual check-in (you'll need to specify the path to your config file)
+sudo -u lastsignal lastsignal --config /path/to/your/config.toml checkin
+
+# Check status  
+sudo -u lastsignal lastsignal --config /path/to/your/config.toml status
+
+# Test outputs
+sudo -u lastsignal lastsignal --config /path/to/your/config.toml test
+
+# For encrypted configs with agenix/sops, use the decrypted path:
+# sudo -u lastsignal lastsignal --config /run/secrets/lastsignal-config checkin
+```
+
+## Hash Setup
+
+Before using this module, you'll need to:
+
+1. Update the `sha256` hash in `default.nix` for the source
+2. Update the `cargoSha256` hash for the Rust dependencies
+
+You can get these hashes by running `nix-build` and using the hashes it provides in error messages.
