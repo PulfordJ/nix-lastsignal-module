@@ -93,6 +93,8 @@ sops.secrets.lastsignal-config = {
 - `group`: Group account for the service (default: "lastsignal") 
 - `dataDirectory`: Directory for state files (default: "/var/lib/lastsignal")
 - `configFile`: Path to the LastSignal configuration file (required)
+- `sha256`: SHA256 hash of the LastSignal source (default: empty string for auto-calculation)
+- `cargoSha256`: SHA256 hash of the Cargo dependencies (default: empty string for auto-calculation)
 
 ## Security
 
@@ -120,11 +122,29 @@ sudo -u lastsignal lastsignal --config /path/to/your/config.toml test
 # sudo -u lastsignal lastsignal --config /run/secrets/lastsignal-config checkin
 ```
 
-## Hash Setup
+## Hash Configuration
 
-Before using this module, you'll need to:
+The module supports configurable source and cargo hashes:
 
-1. Update the `sha256` hash in `default.nix` for the source
-2. Update the `cargoSha256` hash for the Rust dependencies
+### Automatic Hash Calculation (Default)
 
-You can get these hashes by running `nix-build` and using the hashes it provides in error messages.
+By default, both `sha256` and `cargoSha256` are empty strings, which will cause Nix to calculate the correct hashes automatically. On first build, Nix will fail with error messages containing the correct hashes.
+
+### Manual Hash Specification
+
+You can specify the hashes directly in your configuration:
+
+```nix
+services.lastsignal = {
+  enable = true;
+  configFile = ./lastsignal-config.toml;
+  sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  cargoSha256 = "sha256-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=";
+};
+```
+
+### Getting the Correct Hashes
+
+1. Run `nixos-rebuild switch` (or `nix-build` if testing)
+2. Nix will fail and provide the correct hashes in error messages
+3. Copy these hashes to your configuration if you want to pin them

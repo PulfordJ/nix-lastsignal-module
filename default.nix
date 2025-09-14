@@ -13,10 +13,10 @@ let
       owner = "PulfordJ";
       repo = "lastsignal";
       rev = "main"; # or specific commit/tag
-      sha256 = ""; # You'll need to update this with the actual hash
+      sha256 = cfg.sha256;
     };
     
-    cargoSha256 = ""; # You'll need to update this with the actual hash
+    cargoSha256 = cfg.cargoSha256;
     
     nativeBuildInputs = with pkgs; [
       pkg-config
@@ -57,7 +57,7 @@ in {
     
     dataDirectory = mkOption {
       type = types.path;
-      default = "/var/lib/lastsignal";
+      default = "~/.lastsignal";
       description = "Directory where LastSignal stores its state";
     };
     
@@ -83,13 +83,25 @@ in {
           
           [last_signal]
           adapter_type = "file"
-          message_file = "/var/lib/lastsignal/message.txt"
+          message_file = "~/.lastsignal/message.txt"
           
           [app]
-          data_directory = "/var/lib/lastsignal"
+          data_directory = "~/.lastsignal"
           log_level = "info"
         '''
       '';
+    };
+    
+    sha256 = mkOption {
+      type = types.str;
+      default = "";
+      description = "SHA256 hash of the LastSignal source. Leave empty to have Nix calculate it automatically.";
+    };
+    
+    cargoSha256 = mkOption {
+      type = types.str;
+      default = "";
+      description = "SHA256 hash of the Cargo dependencies. Leave empty to have Nix calculate it automatically.";
     };
   };
   
