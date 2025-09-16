@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, lastsignal-src ? null, ... }:
 
 with lib;
 
@@ -9,11 +9,11 @@ let
     pname = "lastsignal";
     version = "0.1.0";
     
-    src = pkgs.fetchFromGitHub {
+    src = if lastsignal-src != null then lastsignal-src else pkgs.fetchFromGitHub {
       owner = "PulfordJ";
       repo = "lastsignal";
-      rev = "main"; # or specific commit/tag
-      sha256 = cfg.sha256;
+      rev = "main";
+      sha256 = lib.fakeHash;
     };
     
     cargoSha256 = cfg.cargoSha256;
@@ -92,11 +92,6 @@ in {
       '';
     };
     
-    sha256 = mkOption {
-      type = types.str;
-      default = "";
-      description = "SHA256 hash of the LastSignal source. Leave empty to have Nix calculate it automatically.";
-    };
     
     cargoSha256 = mkOption {
       type = types.str;

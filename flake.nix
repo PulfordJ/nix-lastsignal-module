@@ -4,17 +4,21 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    lastsignal-src = {
+      url = "github:PulfordJ/lastsignal/main";
+      flake = false;
+    };
   };
   
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, lastsignal-src }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in {
-        packages.default = pkgs.callPackage ./default.nix {};
+        packages.default = pkgs.callPackage ./default.nix { inherit lastsignal-src; };
       }
     ) // {
-      nixosModules.default = import ./default.nix;
-      nixosModules.lastsignal = import ./default.nix;
+      nixosModules.default = import ./default.nix { inherit lastsignal-src; };
+      nixosModules.lastsignal = import ./default.nix { inherit lastsignal-src; };
     };
 }
