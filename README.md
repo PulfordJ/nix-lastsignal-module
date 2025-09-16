@@ -4,16 +4,62 @@ A NixOS module for the LastSignal automated safety check-in system.
 
 ## Usage
 
-Add this module to your NixOS configuration:
+### For Flake-based Configurations
+
+Add this module to your flake inputs and pass the lastsignal source:
 
 ```nix
-# In your configuration.nix or flake
-imports = [ ./path/to/nix-lastsignal-module ];
+# In your flake.nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    lastsignal-module.url = "github:your-username/nix-lastsignal-module";
+    lastsignal-src = {
+      url = "github:PulfordJ/lastsignal";
+      flake = false;
+    };
+  };
 
-services.lastsignal = {
-  enable = true;
-  configFile = ./lastsignal-config.toml; # or any other path
-};
+  outputs = { self, nixpkgs, lastsignal-module, lastsignal-src, ... }: {
+    nixosConfigurations.your-host = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        (import lastsignal-module.outPath { lastsignal-src = lastsignal-src; })
+        {
+          services.lastsignal = {
+            enable = true;
+            configFile = ./lastsignal-config.toml;
+          };
+        }
+      ];
+    };
+  };
+}
+```
+
+### For Traditional Configurations
+
+If you're not using flakes, you need to provide the lastsignal source when importing:
+
+```nix
+# In your configuration.nix
+let
+  lastsignal-src = pkgs.fetchFromGitHub {
+    owner = "PulfordJ";
+    repo = "lastsignal";
+    rev = "main";  # or specific commit/tag
+    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";  # Replace with actual hash
+  };
+in {
+  imports = [ 
+    (import ./path/to/nix-lastsignal-module { inherit lastsignal-src; })
+  ];
+
+  services.lastsignal = {
+    enable = true;
+    configFile = ./lastsignal-config.toml;
+  };
+}
 ```
 
 ## Configuration File
@@ -91,9 +137,8 @@ sops.secrets.lastsignal-config = {
 - `enable`: Whether to enable the LastSignal service
 - `user`: User account for the service (default: "lastsignal")
 - `group`: Group account for the service (default: "lastsignal") 
-- `dataDirectory`: Directory for state files (default: "/var/lib/lastsignal")
+- `dataDirectory`: Directory for state files (default: "~/.lastsignal")
 - `configFile`: Path to the LastSignal configuration file (required)
-- `sha256`: SHA256 hash of the LastSignal source (default: empty string for auto-calculation)
 - `cargoSha256`: SHA256 hash of the Cargo dependencies (default: empty string for auto-calculation)
 
 ## Security
@@ -124,23 +169,32 @@ sudo -u lastsignal lastsignal --config /path/to/your/config.toml test
 
 ## Hash Configuration
 
-The module supports configurable source and cargo hashes:
+### Cargo Dependencies Hash
 
-### Automatic Hash Calculation (Default)
+By default, `cargoSha256` is an empty string, which will cause Nix to calculate the correct hash automatically. On first build, Nix will fail with an error message containing the correct hash.
 
-By default, both `sha256` and `cargoSha256` are empty strings, which will cause Nix to calculate the correct hashes automatically. On first build, Nix will fail with error messages containing the correct hashes.
-
-### Manual Hash Specification
-
-You can specify the hashes directly in your configuration:
+You can specify the cargo hash directly in your configuration:
 
 ```nix
 services.lastsignal = {
   enable = true;
   configFile = ./lastsignal-config.toml;
-  sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
   cargoSha256 = "sha256-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=";
 };
+```
+
+### Source Hash (for Traditional Configurations)
+
+If you're using a traditional configuration (not flakes), you'll need to specify the source hash when fetching from GitHub:
+
+```nix
+let
+  lastsignal-src = pkgs.fetchFromGitHub {
+    owner = "PulfordJ";
+    repo = "lastsignal";
+    rev = "main";
+    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";  # Replace with actual hash
+  };
 ```
 
 ### Getting the Correct Hashes
