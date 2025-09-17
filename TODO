@@ -1,0 +1,1 @@
+Consider using naersk instead to build the package if nix2crate becomes cumbersome e.g https://github.com/w4/pisshoff/blob/b6882c17e0e36d85efce3004826cc9042b76fc4e/flake.nix#L17

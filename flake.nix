@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     lastsignal-src = {
-      url = "github:PulfordJ/lastsignal/main";
+      url = "github:PulfordJ/lastsignal";
       flake = false;
     };
   };

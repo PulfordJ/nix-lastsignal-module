@@ -8,44 +8,11 @@
 with lib; let
   cfg = config.services.lastsignal;
 
-  lastsignal = pkgs.rustPlatform.buildRustPackage rec {
-    pname = "lastsignal";
-    version = "0.1.0";
-
-    src =
-      if lastsignal-src != null
-      then lastsignal-src
-      else
-        pkgs.fetchFromGitHub {
-          owner = "PulfordJ";
-          repo = "lastsignal";
-          rev = "main";
-          sha256 = lib.fakeHash;
-        };
-
-    cargoHash = if cfg.cargoSha256 != "" then cfg.cargoSha256 else lib.fakeHash;
-
-    nativeBuildInputs = with pkgs; [
-      pkg-config
-    ];
-
-    buildInputs = with pkgs;
-      [
-        openssl
-      ]
-      ++ lib.optionals stdenv.isDarwin [
-        darwin.apple_sdk.frameworks.Security
-        darwin.apple_sdk.frameworks.SystemConfiguration
-      ];
-
-    meta = with lib; {
-      description = "Automated safety check-in system";
-      homepage = "https://github.com/PulfordJ/lastsignal";
-      license = licenses.mit;
-      maintainers = [];
-      platforms = platforms.unix;
-    };
-  };
+  lastsignal =
+    let
+      cratePackage = (import "${lastsignal-src}/Cargo.nix" { inherit pkgs; });
+    in
+    cratePackage.rootCrate.build;
 in {
   options.services.lastsignal = {
     enable = mkEnableOption "LastSignal safety check-in system";
@@ -99,11 +66,6 @@ in {
       '';
     };
 
-    cargoSha256 = mkOption {
-      type = types.str;
-      default = "";
-      description = "Hash of the Cargo dependencies (cargoHash). Leave empty to have Nix calculate it automatically.";
-    };
 
     installBinary = mkOption {
       type = types.bool;
@@ -132,7 +94,6 @@ in {
         # Security hardening
         NoNewPrivileges = true;
         ProtectSystem = "strict";
-        ProtectHome = true;
         ReadWritePaths = [cfg.dataDirectory];
         PrivateTmp = true;
         ProtectKernelTunables = true;
