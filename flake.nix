@@ -18,7 +18,9 @@
         packages.default = pkgs.callPackage ./default.nix { inherit lastsignal-src; };
       }
     ) // {
-      nixosModules.default = import ./default.nix { inherit lastsignal-src; };
-      nixosModules.lastsignal = import ./default.nix { inherit lastsignal-src; };
+      nixosModules.default = { config, lib, pkgs, ... }:
+        import ./default.nix { inherit config lib pkgs lastsignal-src; };
+      nixosModules.lastsignal = { config, lib, pkgs, ... }:
+        import ./default.nix { inherit config lib pkgs lastsignal-src; };
     };
 }

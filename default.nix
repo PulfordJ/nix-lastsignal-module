@@ -23,7 +23,7 @@ with lib; let
           sha256 = lib.fakeHash;
         };
 
-    cargoSha256 = cfg.cargoSha256;
+    cargoHash = if cfg.cargoSha256 != "" then cfg.cargoSha256 else lib.fakeHash;
 
     nativeBuildInputs = with pkgs; [
       pkg-config
@@ -102,11 +102,19 @@ in {
     cargoSha256 = mkOption {
       type = types.str;
       default = "";
-      description = "SHA256 hash of the Cargo dependencies. Leave empty to have Nix calculate it automatically.";
+      description = "Hash of the Cargo dependencies (cargoHash). Leave empty to have Nix calculate it automatically.";
+    };
+
+    installBinary = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to install the lastsignal binary in the system environment for command-line use.";
     };
   };
 
   config = mkIf cfg.enable {
+    # Install the binary system-wide if requested
+    environment.systemPackages = mkIf cfg.installBinary [ lastsignal ];
     systemd.services.lastsignal = {
       description = "LastSignal Safety Check-in System";
       after = ["network.target"];
@@ -116,7 +124,7 @@ in {
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${lastsignal}/bin/lastsignal --config ${cfg.configFile} run";
+        ExecStart = "${lastsignal}/bin/lastsignal run --config ${cfg.configFile}";
         Restart = "always";
         RestartSec = "30";
         WorkingDirectory = cfg.dataDirectory;
@@ -160,7 +168,7 @@ in {
         Type = "oneshot";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${lastsignal}/bin/lastsignal --config ${cfg.configFile} test";
+        ExecStart = "${lastsignal}/bin/lastsignal test --config ${cfg.configFile}";
         WorkingDirectory = cfg.dataDirectory;
       };
     };
