@@ -2,17 +2,28 @@
   config,
   lib,
   pkgs,
+  crane,
   lastsignal-src ? null,
   ...
 }:
 with lib; let
   cfg = config.services.lastsignal;
 
-  lastsignal =
-    let
-      cratePackage = (import "${lastsignal-src}/Cargo.nix" { inherit pkgs; });
-    in
-    cratePackage.rootCrate.build;
+  lastsignal = if (lastsignal-src != null) then
+    crane.buildPackage {
+      src = lastsignal-src;
+      buildInputs = with pkgs; [
+        openssl
+      ] ++ lib.optionals stdenv.isDarwin [
+        darwin.apple_sdk.frameworks.Security
+        darwin.apple_sdk.frameworks.SystemConfiguration
+      ];
+      nativeBuildInputs = with pkgs; [
+        pkg-config
+      ];
+    }
+  else
+    throw "lastsignal-src is required";
 in {
   options.services.lastsignal = {
     enable = mkEnableOption "LastSignal safety check-in system";
