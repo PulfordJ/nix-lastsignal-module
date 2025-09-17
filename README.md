@@ -196,9 +196,3 @@ let
     sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";  # Replace with actual hash
   };
 ```
-
-### Getting the Correct Hash
-
-1. Run `nixos-rebuild switch` (or `nix-build` if testing)
-2. Nix will fail and provide the correct hash in error messages
-3. Copy this hash to your configuration if you want to pin it
